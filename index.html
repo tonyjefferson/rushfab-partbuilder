@@ -1,0 +1,1044 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RushFab - Custom Part Builder</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', sans-serif;
+            background: #f5f5f5;
+            color: #333;
+        }
+
+        .app-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .header {
+            background: #1a1a1a;
+            color: white;
+            padding: 20px;
+            margin: -20px -20px 30px -20px;
+        }
+
+        .header h1 {
+            font-size: 28px;
+            font-weight: 600;
+        }
+
+        .header p {
+            color: #999;
+            margin-top: 5px;
+        }
+
+        .progress-bar {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 40px;
+            padding: 0 20px;
+        }
+
+        .progress-step {
+            flex: 1;
+            text-align: center;
+            position: relative;
+            padding: 10px;
+        }
+
+        .progress-step::before {
+            content: '';
+            position: absolute;
+            top: 20px;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: #ddd;
+            z-index: 0;
+        }
+
+        .progress-step:first-child::before {
+            left: 50%;
+        }
+
+        .progress-step:last-child::before {
+            right: 50%;
+        }
+
+        .progress-step-circle {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: #ddd;
+            color: #666;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 10px;
+            position: relative;
+            z-index: 1;
+            font-weight: 600;
+        }
+
+        .progress-step.active .progress-step-circle {
+            background: #d32f2f;
+            color: white;
+        }
+
+        .progress-step.completed .progress-step-circle {
+            background: #4caf50;
+            color: white;
+        }
+
+        .progress-step-label {
+            font-size: 14px;
+            color: #666;
+        }
+
+        .progress-step.active .progress-step-label {
+            color: #d32f2f;
+            font-weight: 600;
+        }
+
+        .main-content {
+            display: flex;
+            gap: 30px;
+        }
+
+        .template-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 20px;
+            padding: 20px;
+        }
+
+        .template-card {
+            background: white;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            padding: 20px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .template-card:hover {
+            border-color: #d32f2f;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+
+        .template-card.selected {
+            border-color: #d32f2f;
+            background: #fff5f5;
+        }
+
+        .template-preview {
+            width: 100%;
+            height: 200px;
+            background: #f5f5f5;
+            border-radius: 4px;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .template-preview svg {
+            max-width: 80%;
+            max-height: 80%;
+        }
+
+        .template-name {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 5px;
+        }
+
+        .template-description {
+            font-size: 14px;
+            color: #666;
+        }
+
+        .category-filter {
+            margin-bottom: 30px;
+            padding: 0 20px;
+        }
+
+        .category-buttons {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .category-btn {
+            padding: 10px 20px;
+            border: 2px solid #ddd;
+            background: white;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 0.2s;
+        }
+
+        .category-btn:hover {
+            border-color: #d32f2f;
+        }
+
+        .category-btn.active {
+            background: #d32f2f;
+            color: white;
+            border-color: #d32f2f;
+        }
+
+        .editor-container {
+            flex: 1;
+            background: white;
+            border-radius: 8px;
+            padding: 30px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        .preview-canvas {
+            width: 100%;
+            height: 400px;
+            background: #fafafa;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            margin-bottom: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .dimension-controls {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .control-group {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .control-label {
+            font-size: 14px;
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: #333;
+        }
+
+        .control-input {
+            padding: 12px;
+            border: 2px solid #ddd;
+            border-radius: 6px;
+            font-size: 16px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .control-input input {
+            flex: 1;
+            border: none;
+            outline: none;
+            font-size: 16px;
+        }
+
+        .control-input-unit {
+            color: #666;
+            font-size: 14px;
+        }
+
+        .material-selector {
+            margin-bottom: 30px;
+        }
+
+        .material-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 15px;
+            margin-top: 15px;
+        }
+
+        .material-card {
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            padding: 15px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .material-card:hover {
+            border-color: #d32f2f;
+        }
+
+        .material-card.selected {
+            border-color: #d32f2f;
+            background: #fff5f5;
+        }
+
+        .material-name {
+            font-weight: 600;
+            margin-bottom: 5px;
+        }
+
+        .material-desc {
+            font-size: 13px;
+            color: #666;
+        }
+
+        .thickness-selector {
+            margin-top: 20px;
+        }
+
+        .thickness-options {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-top: 10px;
+        }
+
+        .thickness-btn {
+            padding: 8px 16px;
+            border: 2px solid #ddd;
+            background: white;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+
+        .thickness-btn:hover {
+            border-color: #d32f2f;
+        }
+
+        .thickness-btn.selected {
+            background: #d32f2f;
+            color: white;
+            border-color: #d32f2f;
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 15px;
+            justify-content: flex-end;
+            margin-top: 30px;
+        }
+
+        .btn {
+            padding: 14px 28px;
+            border: none;
+            border-radius: 6px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn-secondary {
+            background: #f5f5f5;
+            color: #333;
+        }
+
+        .btn-secondary:hover {
+            background: #e0e0e0;
+        }
+
+        .btn-primary {
+            background: #d32f2f;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #b71c1c;
+        }
+
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .pricing-panel {
+            background: #f9f9f9;
+            border-radius: 8px;
+            padding: 20px;
+            margin-top: 30px;
+        }
+
+        .price-display {
+            font-size: 32px;
+            font-weight: 700;
+            color: #d32f2f;
+            margin-bottom: 10px;
+        }
+
+        .price-breakdown {
+            font-size: 14px;
+            color: #666;
+        }
+
+        .quantity-selector {
+            margin-top: 20px;
+        }
+
+        .quantity-input {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .qty-btn {
+            width: 40px;
+            height: 40px;
+            border: 2px solid #ddd;
+            background: white;
+            border-radius: 6px;
+            font-size: 20px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .qty-btn:hover {
+            border-color: #d32f2f;
+            background: #fff5f5;
+        }
+
+        .qty-display {
+            flex: 1;
+            text-align: center;
+            font-size: 24px;
+            font-weight: 600;
+        }
+
+        .sidebar {
+            width: 350px;
+            background: white;
+            border-radius: 8px;
+            padding: 25px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            height: fit-content;
+            position: sticky;
+            top: 20px;
+        }
+
+        .section-title {
+            font-size: 20px;
+            font-weight: 600;
+            margin-bottom: 20px;
+            color: #333;
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        .volume-discount {
+            margin-top: 10px;
+            color: #4caf50;
+            font-size: 14px;
+        }
+
+        .review-info {
+            font-size: 16px;
+            line-height: 1.8;
+            margin-bottom: 20px;
+        }
+
+        .review-info p {
+            margin-bottom: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <div class="header">
+            <h1>🔧 RushFab Custom Part Builder</h1>
+            <p>Design your custom laser-cut parts in minutes</p>
+        </div>
+
+        <div class="progress-bar">
+            <div class="progress-step active" id="progress-1">
+                <div class="progress-step-circle">1</div>
+                <div class="progress-step-label">Select Template</div>
+            </div>
+            <div class="progress-step" id="progress-2">
+                <div class="progress-step-circle">2</div>
+                <div class="progress-step-label">Customize</div>
+            </div>
+            <div class="progress-step" id="progress-3">
+                <div class="progress-step-circle">3</div>
+                <div class="progress-step-label">Select Material</div>
+            </div>
+            <div class="progress-step" id="progress-4">
+                <div class="progress-step-circle">4</div>
+                <div class="progress-step-label">Review & Order</div>
+            </div>
+        </div>
+
+        <!-- Step 1: Template Selection -->
+        <div id="step-1">
+            <div class="category-filter">
+                <div class="category-buttons" id="category-buttons"></div>
+            </div>
+            <div class="template-grid" id="template-grid"></div>
+        </div>
+
+        <!-- Step 2: Customize -->
+        <div id="step-2" class="hidden">
+            <div class="main-content">
+                <div class="editor-container">
+                    <h2 class="section-title">Customize Your Part</h2>
+                    <div class="preview-canvas" id="preview-canvas-2"></div>
+                    <div class="dimension-controls" id="dimension-controls"></div>
+                    <div class="action-buttons">
+                        <button class="btn btn-secondary" onclick="goToStep(1)">← Back</button>
+                        <button class="btn btn-primary" onclick="goToStep(3)">Continue to Material →</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Step 3: Material Selection -->
+        <div id="step-3" class="hidden">
+            <div class="main-content">
+                <div class="editor-container">
+                    <h2 class="section-title">Select Material</h2>
+                    <div class="material-grid" id="material-grid"></div>
+                    <div id="thickness-selector" class="thickness-selector hidden">
+                        <h3 class="control-label">Select Thickness</h3>
+                        <div class="thickness-options" id="thickness-options"></div>
+                    </div>
+                    <div class="action-buttons">
+                        <button class="btn btn-secondary" onclick="goToStep(2)">← Back</button>
+                        <button class="btn btn-primary" id="continue-to-review" onclick="goToStep(4)" disabled>Continue to Review →</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Step 4: Review & Order -->
+        <div id="step-4" class="hidden">
+            <div class="main-content">
+                <div class="editor-container">
+                    <h2 class="section-title">Review Your Part</h2>
+                    <div class="preview-canvas" id="preview-canvas-4"></div>
+                    <div class="review-info" id="review-info"></div>
+                </div>
+
+                <div class="sidebar">
+                    <div class="pricing-panel">
+                        <div class="price-display" id="price-display">$0.00</div>
+                        <div class="price-breakdown" id="price-breakdown">for 1 piece</div>
+                    </div>
+
+                    <div class="quantity-selector">
+                        <label class="control-label">Quantity</label>
+                        <div class="quantity-input">
+                            <button class="qty-btn" onclick="changeQuantity(-1)">−</button>
+                            <div class="qty-display" id="qty-display">1</div>
+                            <button class="qty-btn" onclick="changeQuantity(1)">+</button>
+                        </div>
+                        <div id="volume-discount" class="volume-discount hidden">
+                            ✓ Volume discount applied!
+                        </div>
+                    </div>
+
+                    <div class="quantity-selector" style="margin-top: 20px;">
+                        <label class="control-label">Turnaround Time</label>
+                        <select id="rush-turnaround" onchange="changeRushTurnaround(this.value)" style="width: 100%; padding: 12px; border: 2px solid #ddd; border-radius: 6px; font-size: 14px; margin-top: 10px;">
+                            <option value="standard">Standard (5-7 days)</option>
+                            <option value="2-day">2-Day Rush (+20% - TENTATIVE)</option>
+                            <option value="next-day">Next-Day Rush (+50% - TENTATIVE)</option>
+                        </select>
+                        <div style="margin-top: 8px; font-size: 12px; color: #d32f2f; font-style: italic;">
+                            * Rush pricing is tentative, pending management approval
+                        </div>
+                    </div>
+
+                    <div class="action-buttons" style="margin-top: 30px; flex-direction: column;">
+                        <button class="btn btn-primary" style="width: 100%;" onclick="addToCart()">
+                            Add to Cart
+                        </button>
+                        <button class="btn btn-secondary" onclick="goToStep(1)" style="width: 100%;">
+                            Start Over
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Application State
+        const state = {
+            currentStep: 1,
+            selectedCategory: 'all',
+            selectedTemplate: null,
+            dimensions: {},
+            selectedMaterial: null,
+            selectedThickness: null,
+            quantity: 1,
+            rushTurnaround: 'standard' // standard, 2-day, next-day
+        };
+
+        // Template Data
+        const TEMPLATES = [
+            {
+                id: 'rect-4hole',
+                name: 'Rectangle Mounting Plate',
+                description: '4-corner mounting holes',
+                category: 'brackets',
+                defaultDimensions: { width: 6, height: 4, holeSize: 0.25, cornerRadius: 0.25 },
+                svg: '<svg viewBox="0 0 120 80" fill="none" stroke="#333" stroke-width="2"><rect x="10" y="10" width="100" height="60" rx="5" fill="#e0e0e0"/><circle cx="20" cy="20" r="4" fill="white"/><circle cx="100" cy="20" r="4" fill="white"/><circle cx="20" cy="60" r="4" fill="white"/><circle cx="100" cy="60" r="4" fill="white"/></svg>'
+            },
+            {
+                id: 'l-bracket',
+                name: 'L-Bracket',
+                description: '90° angle bracket',
+                category: 'brackets',
+                defaultDimensions: { width: 4, height: 4, thickness: 0.125 },
+                svg: '<svg viewBox="0 0 100 100" fill="none" stroke="#333" stroke-width="2"><path d="M 20 20 L 20 80 L 40 80 L 40 40 L 80 40 L 80 20 Z" fill="#e0e0e0"/><circle cx="30" cy="30" r="3" fill="white"/><circle cx="30" cy="70" r="3" fill="white"/><circle cx="70" cy="30" r="3" fill="white"/></svg>'
+            },
+            {
+                id: 'u-bracket',
+                name: 'U-Channel Bracket',
+                description: '3-sided channel',
+                category: 'brackets',
+                defaultDimensions: { width: 6, height: 3, depth: 2 },
+                svg: '<svg viewBox="0 0 120 80" fill="none" stroke="#333" stroke-width="2"><path d="M 20 20 L 20 60 L 30 60 L 30 30 L 90 30 L 90 60 L 100 60 L 100 20 Z" fill="#e0e0e0"/></svg>'
+            },
+            {
+                id: 'simple-rect',
+                name: 'Simple Rectangle',
+                description: 'Plain plate, custom size',
+                category: 'basic',
+                defaultDimensions: { width: 8, height: 6 },
+                svg: '<svg viewBox="0 0 120 90" fill="none" stroke="#333" stroke-width="2"><rect x="10" y="15" width="100" height="60" fill="#e0e0e0"/></svg>'
+            },
+            {
+                id: 'circle-hole',
+                name: 'Circle with Center Hole',
+                description: 'Washer/spacer style',
+                category: 'basic',
+                defaultDimensions: { outerDiameter: 4, innerDiameter: 1 },
+                svg: '<svg viewBox="0 0 100 100" fill="none" stroke="#333" stroke-width="2"><circle cx="50" cy="50" r="40" fill="#e0e0e0"/><circle cx="50" cy="50" r="15" fill="white"/></svg>'
+            },
+            {
+                id: 'rect-slots',
+                name: 'Rectangle with Slots',
+                description: 'Elongated mounting holes',
+                category: 'basic',
+                defaultDimensions: { width: 8, height: 4, slotWidth: 0.5, slotLength: 2 },
+                svg: '<svg viewBox="0 0 120 80" fill="none" stroke="#333" stroke-width="2"><rect x="10" y="20" width="100" height="40" rx="3" fill="#e0e0e0"/><rect x="25" y="35" width="20" height="10" rx="5" fill="white"/><rect x="75" y="35" width="20" height="10" rx="5" fill="white"/></svg>'
+            },
+            {
+                id: 'gusset',
+                name: 'Gusset Triangle',
+                description: 'Reinforcement bracket',
+                category: 'specialized',
+                defaultDimensions: { width: 4, height: 4 },
+                svg: '<svg viewBox="0 0 100 100" fill="none" stroke="#333" stroke-width="2"><path d="M 20 80 L 20 20 L 80 80 Z" fill="#e0e0e0"/><circle cx="30" cy="30" r="3" fill="white"/><circle cx="30" cy="70" r="3" fill="white"/><circle cx="70" cy="70" r="3" fill="white"/></svg>'
+            },
+            {
+                id: 'flange',
+                name: 'Bolt Circle Flange',
+                description: 'Even-spaced hole pattern',
+                category: 'specialized',
+                defaultDimensions: { outerDiameter: 6, boltCircleDiameter: 4.5, holeCount: 6 },
+                svg: '<svg viewBox="0 0 100 100" fill="none" stroke="#333" stroke-width="2"><circle cx="50" cy="50" r="40" fill="#e0e0e0"/><circle cx="50" cy="50" r="8" fill="white"/><circle cx="50" cy="20" r="4" fill="white"/><circle cx="76" cy="30" r="4" fill="white"/><circle cx="76" cy="70" r="4" fill="white"/><circle cx="50" cy="80" r="4" fill="white"/><circle cx="24" cy="70" r="4" fill="white"/><circle cx="24" cy="30" r="4" fill="white"/></svg>'
+            }
+        ];
+
+        const MATERIALS = [
+            {
+                id: 'mild-steel',
+                name: 'Mild Steel',
+                description: 'Strong, weldable, cost-effective',
+                thicknesses: ['14ga (0.075")', '11ga (0.120")', '3/16" (0.187")', '1/4" (0.250")']
+            },
+            {
+                id: 'stainless',
+                name: 'Stainless Steel',
+                description: 'Corrosion resistant, clean appearance',
+                thicknesses: ['16ga (0.060")', '14ga (0.075")', '11ga (0.120")']
+            },
+            {
+                id: 'aluminum',
+                name: 'Aluminum',
+                description: 'Lightweight, strong, no rust',
+                thicknesses: ['0.063"', '0.080"', '0.125"']
+            }
+        ];
+
+        const CATEGORIES = [
+            { id: 'all', name: 'All Templates' },
+            { id: 'brackets', name: 'Brackets' },
+            { id: 'basic', name: 'Basic Shapes' },
+            { id: 'specialized', name: 'Specialized' }
+        ];
+
+        // Initialize
+        function init() {
+            renderCategoryButtons();
+            renderTemplates();
+            renderMaterials();
+        }
+
+        // Render Functions
+        function renderCategoryButtons() {
+            const container = document.getElementById('category-buttons');
+            container.innerHTML = CATEGORIES.map(cat => `
+                <button 
+                    class="category-btn ${state.selectedCategory === cat.id ? 'active' : ''}" 
+                    onclick="selectCategory('${cat.id}')"
+                >
+                    ${cat.name}
+                </button>
+            `).join('');
+        }
+
+        function renderTemplates() {
+            const filtered = state.selectedCategory === 'all' 
+                ? TEMPLATES 
+                : TEMPLATES.filter(t => t.category === state.selectedCategory);
+            
+            const container = document.getElementById('template-grid');
+            container.innerHTML = filtered.map(template => `
+                <div class="template-card" onclick="selectTemplate('${template.id}')">
+                    <div class="template-preview">${template.svg}</div>
+                    <div class="template-name">${template.name}</div>
+                    <div class="template-description">${template.description}</div>
+                </div>
+            `).join('');
+        }
+
+        function renderDimensionControls() {
+            const container = document.getElementById('dimension-controls');
+            const dims = Object.keys(state.dimensions);
+            
+            container.innerHTML = dims.map(key => {
+                const label = key.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase());
+                return `
+                    <div class="control-group">
+                        <label class="control-label">${label}</label>
+                        <div class="control-input">
+                            <input 
+                                type="number" 
+                                step="0.125" 
+                                value="${state.dimensions[key]}"
+                                onchange="updateDimension('${key}', this.value)"
+                            />
+                            <span class="control-input-unit">inches</span>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function renderMaterials() {
+            const container = document.getElementById('material-grid');
+            container.innerHTML = MATERIALS.map(material => `
+                <div 
+                    class="material-card ${state.selectedMaterial?.id === material.id ? 'selected' : ''}" 
+                    onclick="selectMaterial('${material.id}')"
+                >
+                    <div class="material-name">${material.name}</div>
+                    <div class="material-desc">${material.description}</div>
+                </div>
+            `).join('');
+        }
+
+        function renderThicknesses() {
+            if (!state.selectedMaterial) return;
+            
+            const selector = document.getElementById('thickness-selector');
+            selector.classList.remove('hidden');
+            
+            const container = document.getElementById('thickness-options');
+            const material = MATERIALS.find(m => m.id === state.selectedMaterial.id);
+            
+            container.innerHTML = material.thicknesses.map((thickness, index) => `
+                <button 
+                    class="thickness-btn ${state.selectedThickness === thickness ? 'selected' : ''}" 
+                    data-thickness="${thickness}"
+                    data-index="${index}"
+                >
+                    ${thickness}
+                </button>
+            `).join('');
+            
+            // Add event listeners to thickness buttons
+            container.querySelectorAll('.thickness-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    selectThickness(this.dataset.thickness);
+                });
+            });
+        }
+
+        function renderReview() {
+            if (!state.selectedTemplate || !state.selectedMaterial || !state.selectedThickness) {
+                console.error('Cannot render review - missing required data');
+                return;
+            }
+            
+            const previewCanvas = document.getElementById('preview-canvas-4');
+            previewCanvas.innerHTML = state.selectedTemplate.svg;
+            
+            const reviewInfo = document.getElementById('review-info');
+            reviewInfo.innerHTML = `
+                <p><strong>Template:</strong> ${state.selectedTemplate.name}</p>
+                <p><strong>Material:</strong> ${state.selectedMaterial.name} - ${state.selectedThickness}</p>
+                <p><strong>Dimensions:</strong> ${JSON.stringify(state.dimensions, null, 2).replace(/[{}"]/g, '').replace(/,/g, '<br>')}</p>
+            `;
+            
+            updatePricing();
+        }
+
+        // Event Handlers
+        function selectCategory(categoryId) {
+            state.selectedCategory = categoryId;
+            renderCategoryButtons();
+            renderTemplates();
+        }
+
+        function selectTemplate(templateId) {
+            const template = TEMPLATES.find(t => t.id === templateId);
+            state.selectedTemplate = template;
+            state.dimensions = { ...template.defaultDimensions };
+            goToStep(2);
+        }
+
+        function updateDimension(key, value) {
+            state.dimensions[key] = parseFloat(value) || 0;
+        }
+
+        function selectMaterial(materialId) {
+            const material = MATERIALS.find(m => m.id === materialId);
+            state.selectedMaterial = material;
+            state.selectedThickness = null;
+            renderMaterials();
+            renderThicknesses();
+            document.getElementById('continue-to-review').disabled = true;
+        }
+
+        function selectThickness(thickness) {
+            state.selectedThickness = thickness;
+            renderThicknesses();
+            document.getElementById('continue-to-review').disabled = false;
+        }
+
+        function changeQuantity(delta) {
+            state.quantity = Math.max(1, state.quantity + delta);
+            document.getElementById('qty-display').textContent = state.quantity;
+            
+            const discount = document.getElementById('volume-discount');
+            if (state.quantity >= 10) {
+                discount.classList.remove('hidden');
+            } else {
+                discount.classList.add('hidden');
+            }
+            
+            updatePricing();
+        }
+
+        function changeRushTurnaround(value) {
+            state.rushTurnaround = value;
+            updatePricing();
+        }
+
+        function updatePricing() {
+            if (!state.selectedTemplate || !state.selectedMaterial || !state.selectedThickness) {
+                return;
+            }
+            
+            // Material properties
+            const materialSpecs = {
+                'mild-steel': { 
+                    density: 0.2843, 
+                    pricePerLb: 0.60,
+                    cutSpeeds: {
+                        '14ga (0.075")': { speed: 140, pierce: 0.5, thickness: 0.0747 },
+                        '11ga (0.120")': { speed: 100, pierce: 2, thickness: 0.1196 },
+                        '3/16" (0.187")': { speed: 90, pierce: 1.5, thickness: 0.1875 },
+                        '1/4" (0.250")': { speed: 85, pierce: 3, thickness: 0.25 }
+                    }
+                },
+                'stainless': { 
+                    density: 0.2843, 
+                    pricePerLb: 2.50,
+                    cutSpeeds: {
+                        '16ga (0.060")': { speed: 160, pierce: 0.1, thickness: 0.06 },
+                        '14ga (0.075")': { speed: 175, pierce: 0.1, thickness: 0.075 },
+                        '11ga (0.120")': { speed: 110, pierce: 1, thickness: 0.12 }
+                    }
+                },
+                'aluminum': { 
+                    density: 0.098, 
+                    pricePerLb: 3.10,
+                    cutSpeeds: {
+                        '0.063"': { speed: 210, pierce: 1.5, thickness: 0.063 },
+                        '0.080"': { speed: 200, pierce: 0.5, thickness: 0.08 },
+                        '0.125"': { speed: 110, pierce: 1, thickness: 0.125 }
+                    }
+                }
+            };
+            
+            const material = materialSpecs[state.selectedMaterial.id];
+            if (!material) {
+                console.error('Material not found:', state.selectedMaterial.id);
+                return;
+            }
+            
+            const cutData = material.cutSpeeds[state.selectedThickness];
+            if (!cutData) {
+                console.error('Cut data not found for thickness:', state.selectedThickness);
+                return;
+            }
+            
+            // Calculate dimensions from template
+            const width = state.dimensions.width || 6;
+            const height = state.dimensions.height || 4;
+            const area = width * height; // square inches
+            const volume = area * cutData.thickness; // cubic inches
+            const weight = volume * material.density; // pounds
+            
+            // STEP 1: Material Cost
+            const rawMaterialCost = weight * material.pricePerLb;
+            const materialCost = rawMaterialCost * 1.10; // 10% handling
+            
+            // STEP 2: Estimate cut length and pierces
+            const perimeter = 2 * (width + height);
+            const holeCount = state.dimensions.holeCount || state.dimensions.holeSize ? 4 : 0; // Estimate based on template
+            const holeDiameter = state.dimensions.holeSize || state.dimensions.innerDiameter || 0.5;
+            const holeCutLength = holeCount * Math.PI * holeDiameter;
+            const totalCutLength = perimeter + holeCutLength;
+            const pierceCount = 1 + holeCount;
+            
+            // STEP 3: Laser Cutting Time & Cost
+            const cutTime = (totalCutLength / (cutData.speed * 0.7)) + (cutData.pierce * pierceCount / 60); // minutes
+            const laserRate = 95; // $/hour
+            const cuttingCost = (cutTime * state.quantity) * (laserRate / 60);
+            
+            // STEP 4: Programming & Setup
+            const shopRate = 90; // $/hour
+            const programTime = 10 + (pierceCount * 0.075); // minutes
+            const setupCost = programTime * (shopRate / 60);
+            
+            // STEP 5: Labor Handling
+            const laborTime = Math.max(5, cutTime * state.quantity); // minutes
+            const laborCost = laborTime * (shopRate / 60);
+            
+            // STEP 6: Bending (if applicable)
+            const bendCount = state.dimensions.bends || 0;
+            const bendCost = bendCount * state.quantity * 0.50;
+            
+            // STEP 7: Office Overhead (fixed per job)
+            const overhead = 52.50;
+            
+            // STEP 8: Rush Turnaround (TENTATIVE PRICING)
+            let rushMultiplier = 1.0;
+            let rushLabel = '';
+            if (state.rushTurnaround === '2-day') {
+                rushMultiplier = 1.20; // +20% TENTATIVE
+                rushLabel = ' (2-day rush)';
+            } else if (state.rushTurnaround === 'next-day') {
+                rushMultiplier = 1.50; // +50% TENTATIVE
+                rushLabel = ' (next-day rush)';
+            }
+            
+            // SUBTOTAL
+            const subtotal = (materialCost + cuttingCost + setupCost + laborCost + bendCost + overhead) * rushMultiplier;
+            
+            // MARKUP (30%)
+            const markup = subtotal * 0.30;
+            
+            // TOTAL
+            const totalPrice = subtotal + markup;
+            const unitPrice = totalPrice / state.quantity;
+            
+            // Update display
+            document.getElementById('price-display').textContent = `$${totalPrice.toFixed(2)}`;
+            document.getElementById('price-breakdown').innerHTML = `
+                <div style="margin-bottom: 15px;">
+                    <strong>for ${state.quantity} ${state.quantity === 1 ? 'piece' : 'pieces'}${rushLabel}</strong><br>
+                    <span style="color: #666;">$${unitPrice.toFixed(2)} each</span>
+                </div>
+                <div style="font-size: 13px; line-height: 1.6; color: #666; border-top: 1px solid #ddd; padding-top: 10px;">
+                    <strong style="color: #333;">Cost Breakdown:</strong><br>
+                    Material: $${materialCost.toFixed(2)}<br>
+                    Laser Cutting: $${cuttingCost.toFixed(2)}<br>
+                    Setup/Programming: $${setupCost.toFixed(2)}<br>
+                    Labor: $${laborCost.toFixed(2)}<br>
+                    ${bendCost > 0 ? `Bending: $${bendCost.toFixed(2)}<br>` : ''}
+                    Overhead: $${overhead.toFixed(2)}<br>
+                    ${rushMultiplier > 1 ? `<span style="color: #d32f2f;">Rush Fee: $${((subtotal - (materialCost + cuttingCost + setupCost + laborCost + bendCost + overhead))).toFixed(2)} (TENTATIVE)</span><br>` : ''}
+                    Markup (30%): $${markup.toFixed(2)}
+                </div>
+            `;
+        }
+
+        function goToStep(stepNum) {
+            // Hide all steps
+            for (let i = 1; i <= 4; i++) {
+                document.getElementById(`step-${i}`).classList.add('hidden');
+                document.getElementById(`progress-${i}`).classList.remove('active', 'completed');
+            }
+            
+            // Show current step
+            document.getElementById(`step-${stepNum}`).classList.remove('hidden');
+            document.getElementById(`progress-${stepNum}`).classList.add('active');
+            
+            // Mark completed steps
+            for (let i = 1; i < stepNum; i++) {
+                document.getElementById(`progress-${i}`).classList.add('completed');
+            }
+            
+            state.currentStep = stepNum;
+            
+            // Render step-specific content
+            if (stepNum === 2) {
+                const canvas = document.getElementById('preview-canvas-2');
+                canvas.innerHTML = state.selectedTemplate.svg;
+                renderDimensionControls();
+            } else if (stepNum === 3) {
+                renderMaterials();
+                if (state.selectedMaterial) {
+                    renderThicknesses();
+                }
+            } else if (stepNum === 4) {
+                renderReview();
+            }
+        }
+
+        function addToCart() {
+            const rushText = state.rushTurnaround === 'standard' ? 'Standard (5-7 days)' :
+                           state.rushTurnaround === '2-day' ? '2-Day Rush (+20% - TENTATIVE)' :
+                           'Next-Day Rush (+50% - TENTATIVE)';
+            
+            alert('Add to Cart functionality will be integrated with Shopify!\n\n' +
+                  'Configuration:\n' +
+                  `Template: ${state.selectedTemplate.name}\n` +
+                  `Material: ${state.selectedMaterial.name} - ${state.selectedThickness}\n` +
+                  `Quantity: ${state.quantity}\n` +
+                  `Turnaround: ${rushText}\n` +
+                  `Price: ${document.getElementById('price-display').textContent}`);
+        }
+
+        // Initialize on page load
+        init();
+    </script>
+</body>
+</html>
