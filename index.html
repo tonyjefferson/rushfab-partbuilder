@@ -770,7 +770,11 @@
             const container = document.getElementById('thickness-options');
             const material = MATERIALS.find(m => m.id === state.selectedMaterial.id);
             
-            container.innerHTML = material.thicknesses.map((thickness, index) => `
+            // Remove any existing click handler
+            const newContainer = container.cloneNode(false);
+            container.parentNode.replaceChild(newContainer, container);
+            
+            newContainer.innerHTML = material.thicknesses.map((thickness, index) => `
                 <button 
                     class="thickness-btn ${state.selectedThickness === thickness ? 'selected' : ''}" 
                     data-thickness="${thickness}"
@@ -780,11 +784,13 @@
                 </button>
             `).join('');
             
-            // Add event listeners to thickness buttons
-            container.querySelectorAll('.thickness-btn').forEach(btn => {
-                btn.addEventListener('click', function() {
-                    selectThickness(this.dataset.thickness);
-                });
+            // Use event delegation on the container
+            newContainer.addEventListener('click', function(e) {
+                if (e.target.classList.contains('thickness-btn')) {
+                    e.preventDefault();
+                    const thickness = e.target.dataset.thickness;
+                    selectThickness(thickness);
+                }
             });
         }
 
